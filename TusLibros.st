@@ -29,7 +29,7 @@ test02AddingABookToCartMakesItNotEmpty
 	
 	self deny: cart isEmpty.! !
 
-!CartTest methodsFor: 'tests' stamp: 'pfu 11/8/2024 19:53:24'!
+!CartTest methodsFor: 'tests' stamp: 'PFU 11/9/2024 20:29:43'!
 test03AddingMultipleBooksAffectPurchaseListSize
 	|cart |
 	"esta demas"
@@ -39,7 +39,7 @@ test03AddingMultipleBooksAffectPurchaseListSize
 	cart addBook: '1' amount: 1.
 	cart addBook: '2' amount: 5.
 	
-	self assert: cart purchaseListSize equals: 6.! !
+	self assert: cart amountOfItems equals: 6.! !
 
 !CartTest methodsFor: 'tests' stamp: 'pfu 11/8/2024 19:53:27'!
 test04InvalidAmountOfBooks
@@ -103,63 +103,63 @@ TestCase subclass: #CashierTest
 	poolDictionaries: ''
 	category: 'TusLibros'!
 
-!CashierTest methodsFor: 'test' stamp: 'pfu 11/8/2024 18:22:31'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 19:03:19'!
 test01CannotCheckoutEmptyCart
 	|cart cashier|
 	cart := Cart acceptingItemsFrom: factory priceList.
 	cashier := Cashier new.
 	
-	self should: [cashier checkout: cart]
+	self should: [cashier checkout: cart with: factory validCreditCard onDate: factory today.]
 	raise: Error - MessageNotUnderstood
 	withExceptionDo: [:error | 
-		self assert: error messageText equals: 'Empty cart'].
+		self assert: error messageText equals: cashier emptyCartError].
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'pfu 11/8/2024 18:23:34'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 19:24:06'!
 test02CashierCheckoutsCorrectPriceForCart
-	|cart cashier total |
+	|cart cashier sale |
 	cart := Cart acceptingItemsFrom: factory priceList.
 	cart addBook: '1' amount: 2.
 	
-	cashier := Cashier with: factory stubMerchantProcessor.
+	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
 	
-	total := cashier checkout: cart.
+	sale := cashier checkout: cart with: factory validCreditCard onDate: factory today.
 	
-	self assert: total equals: 50.
+	self assert: sale total equals: 50.
 	
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'pfu 11/8/2024 18:23:41'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 19:24:20'!
 test03CashierCheckoutsCorrectPriceForCartWithDifferentItems
-	|cart cashier total |
+	|cart cashier sale |
 	cart := Cart acceptingItemsFrom: factory priceList.
 	cart addBook: '1' amount: 2.
 	cart addBook: '3' amount: 5.
 	
-	cashier := Cashier with: factory stubMerchantProcessor.
+	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
 	
-	total := cashier checkout: cart.
+	sale := cashier checkout: cart with: factory validCreditCard onDate: factory today.
 	
-	self assert: total equals: 425.
+	self assert: sale total equals: 425.
 	
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'pfu 11/8/2024 18:29:54'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 20:29:43'!
 test04CashierCantCheckoutWithExpiredCard
 	|cart cashier today |
 	cart := Cart acceptingItemsFrom: factory priceList.
 	cart addBook: '1' amount: 2.
-	cashier := Cashier with: factory stubMerchantProcessor.
+	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
 	today := factory today.
 	
 	self should: [cashier checkout: cart with: factory expiredCreditCard onDate: today]
 	raise: Error - MessageNotUnderstood 
 	withExceptionDo: [:error |
 		self assert: error messageText equals: 'Expired credit card'.
-		self assert: cart purchaseListSize equals: 2.
+		self assert: cart amountOfItems equals: 2.
 		self assert: factory stubMerchantProcessor requestsReceived equals: 0.
 		]
 	
@@ -167,19 +167,19 @@ test04CashierCantCheckoutWithExpiredCard
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'pfu 11/8/2024 19:57:22'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 20:29:43'!
 test05CashierCantCheckoutWithStolenCard
 	|cart cashier  |
 	cart := Cart acceptingItemsFrom: factory priceList.
 	cart addBook: '1' amount: 2.
-	cashier := Cashier with: factory stubMerchantProcessor.
+	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
 
 	
 	self should: [cashier checkout: cart with: factory robbedCreditCard onDate: factory today]
 	raise: Error - MessageNotUnderstood 
 	withExceptionDo: [:error | 
 		self assert: error messageText equals: 'Robbed credit card'.
-		self assert: cart purchaseListSize equals: 2.
+		self assert: cart amountOfItems equals: 2.
 		self assert: factory stubMerchantProcessor requestsReceived equals: 1.
 		]
 	
@@ -187,18 +187,18 @@ test05CashierCantCheckoutWithStolenCard
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'pfu 11/8/2024 18:30:19'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 20:29:43'!
 test06CashierCantCheckoutWithEmptyCard
 	|cart cashier |
 	cart := Cart acceptingItemsFrom: factory priceList.
 	cart addBook: '1' amount: 2.
-	cashier := Cashier with: factory stubMerchantProcessor.
+	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
 	
 	self should: [cashier checkout: cart with: factory emptyCreditCard onDate: factory today]
 	raise: Error - MessageNotUnderstood
 	withExceptionDo: [:error |
 		self assert: error messageText equals: 'Empty credit card'.
-		self assert: cart purchaseListSize equals: 2.
+		self assert: cart amountOfItems equals: 2.
 		self assert: factory stubMerchantProcessor requestsReceived equals: 1.
 
 		]
@@ -207,16 +207,16 @@ test06CashierCantCheckoutWithEmptyCard
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'pfu 11/8/2024 18:30:26'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 19:24:41'!
 test07CashierCheckoutsWithValidCard
-	|cart cashier total |
+	|cart cashier transactionId sale |
 	cart := Cart acceptingItemsFrom: factory priceList.
 	cart addBook: '1' amount: 2.
-	cashier := Cashier with: factory stubMerchantProcessor.
+	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
 	
-	total := cashier checkout: cart with: factory validCreditCard onDate: factory today.
+	sale := cashier checkout: cart with: factory validCreditCard onDate: factory today.
 	
-	self assert: total equals: 50.
+	self assert: sale total equals: 50.
 	self assert: factory stubMerchantProcessor requestsReceived equals: 1.
 	! !
 
@@ -283,11 +283,20 @@ assertRest: aRESTHandler emptyCart: aCartId
 	
 	self assert: (aRESTHandler listCart: aCartId) equals: ''.! !
 
+!RESTAdapterTest methodsFor: 'support' stamp: 'PFU 11/9/2024 18:18:33'!
+setUpREST
+	^ RESTAdapter 
+		validatingWith: factory credentialValidator 
+		priceList: factory priceList 
+		merchant: factory stubMerchantProcessor 
+		onDate: factory today 
+		salesBook: factory salesBook.! !
 
-!RESTAdapterTest methodsFor: 'tests' stamp: 'pfu 11/8/2024 20:54:14'!
+
+!RESTAdapterTest methodsFor: 'tests' stamp: 'PFU 11/9/2024 09:40:58'!
 test01CreateCartWithInvalidCredentials
 	|rest  | 
-	rest := RESTAdapter validatingWith: factory credentialValidator priceList: factory priceList.
+	rest := self setUpREST.
 	
 	self should: [rest createCartForUser: 'pedro' withPassword: 'WRONGPASSWORD']
 	raise: Error - MessageNotUnderstood
@@ -296,19 +305,19 @@ test01CreateCartWithInvalidCredentials
 		
 ]! !
 
-!RESTAdapterTest methodsFor: 'tests' stamp: 'pfu 11/8/2024 20:59:51'!
+!RESTAdapterTest methodsFor: 'tests' stamp: 'PFU 11/9/2024 09:41:21'!
 test02CartCreatedWithValidCredentialsIsEmpty
 	|rest  cartId | 
-	rest := RESTAdapter validatingWith: factory credentialValidator priceList: factory priceList.
+	rest := self setUpREST.
 	cartId := rest createCartForUser: 'pedro' withPassword: '123'.
 	
 	self assertRest: rest emptyCart: cartId.
 ! !
 
-!RESTAdapterTest methodsFor: 'tests' stamp: 'pfu 11/8/2024 20:46:55'!
+!RESTAdapterTest methodsFor: 'tests' stamp: 'PFU 11/9/2024 09:41:24'!
 test03AddingToCart
 	|rest  cartId book1 book2 | 
-	rest := RESTAdapter validatingWith: factory credentialValidator priceList: factory priceList.
+	rest := self setUpREST.
 	cartId := rest createCartForUser: 'pedro' withPassword: '123'.
 	book1 := factory book1.
 	book2 := factory book2.
@@ -318,10 +327,10 @@ test03AddingToCart
 	
 	self assert: (rest listCart: cartId) equals: '|',book1,'|3|',book2, '|3'.! !
 
-!RESTAdapterTest methodsFor: 'tests' stamp: 'pfu 11/8/2024 20:58:24'!
-test04AddingInvalidAmountToCart
+!RESTAdapterTest methodsFor: 'tests' stamp: 'PFU 11/9/2024 09:42:31'!
+test04InvalidAddToCart
 	|rest  cartId book1 | 
-	rest := RESTAdapter validatingWith: factory credentialValidator priceList: factory priceList.
+	rest := self setUpREST.
 	cartId := rest createCartForUser: 'pedro' withPassword: '123'.
 	book1 := factory book1.
 	
@@ -330,6 +339,55 @@ test04AddingInvalidAmountToCart
 	withExceptionDo: [:error | 
 		self assertRest: rest emptyCart: cartId.
 		]! !
+
+!RESTAdapterTest methodsFor: 'tests' stamp: 'PFU 11/9/2024 09:48:18'!
+test05InvalidCartCantBeListed
+	|rest  cartId | 
+	rest := self setUpREST.
+	cartId := 929292929. "an invalid id"
+	
+	self should: [rest listCart: cartId]
+	raise: Error - MessageNotUnderstood 
+	withExceptionDo: [:error | 
+		self assert: error messageText equals: rest invalidCartIdError.
+		]! !
+
+!RESTAdapterTest methodsFor: 'tests' stamp: 'PFU 11/9/2024 10:01:09'!
+test06CannotCheckoutEmptyCart
+	|rest cartId creditCard | 
+	rest := self setUpREST.
+	cartId := rest createCartForUser: 'pedro' withPassword: '123'.
+	creditCard := factory validCreditCard.
+	
+	self should: [rest checkoutCart: cartId for: creditCard owner withCard: creditCard number expiringOn: creditCard expiration ]
+	raise: Error - MessageNotUnderstood 
+	withExceptionDo: [:error | 
+		self assert: error messageText equals: rest emptyCartError.
+		]! !
+
+!RESTAdapterTest methodsFor: 'tests' stamp: 'PFU 11/9/2024 21:51:05'!
+test07CheckoutAValidCart
+	|rest cartId creditCard transactionId | 
+	rest := self setUpREST.
+	cartId := rest createCartForUser: 'pedro' withPassword: '123'.
+	creditCard := factory validCreditCard.
+	rest addToCart: cartId amount: 59 of: factory book1.
+	
+	transactionId := rest checkoutCart: cartId for: creditCard owner withCard: creditCard number expiringOn: creditCard expiration.
+	
+	self assert: (rest totalFromTransaction: transactionId) equals: 59 * 25.! !
+
+!RESTAdapterTest methodsFor: 'tests' stamp: 'PFU 11/9/2024 21:50:13'!
+test08ListPurchases
+	|rest cartId response | 
+	rest := self setUpREST.
+	cartId := rest createCartForUser: 'pedro' withPassword: '123'.
+	rest addToCart: cartId amount: 59 of: factory book1.
+	
+	response := rest listPurchasesFor: 'pedro' withPassword: '123'.
+	
+
+	self assert: response equals: ((rest getCartWithId: cartId) listYourself , '|59').! !
 
 
 !RESTAdapterTest methodsFor: 'setup' stamp: 'pfu 11/8/2024 19:58:31'!
@@ -351,26 +409,21 @@ initializeAcceptingFrom: aPriceList
 	books := Bag new.! !
 
 
+!Cart methodsFor: 'testing' stamp: 'PFU 11/9/2024 20:29:43'!
+amountOfItems
+	^books size! !
+
 !Cart methodsFor: 'testing' stamp: 'pfu 11/2/2024 09:04:13'!
 isEmpty
 	^books size = 0.! !
 
-!Cart methodsFor: 'testing' stamp: 'pfu 11/5/2024 20:27:12'!
-purchaseListSize
-	^books size! !
 
-
-!Cart methodsFor: 'books' stamp: 'pfu 11/5/2024 20:28:18'!
+!Cart methodsFor: 'books' stamp: 'PFU 11/9/2024 20:18:19'!
 addBook: anISBN amount: anAmount 
 	self assertValidAmountOfBooksToAdd: anAmount.
 	self assertValidISBN: anISBN.
 	
-	"chequear si existe antes!! si no la estoy pisando"
 	books add: anISBN withOccurrences: anAmount.! !
-
-!Cart methodsFor: 'books' stamp: 'pfu 11/5/2024 20:32:07'!
-getAmountOf: aBook
-	^books occurrencesOf: aBook! !
 
 !Cart methodsFor: 'books' stamp: 'pfu 11/8/2024 20:43:10'!
 listYourself
@@ -401,16 +454,15 @@ assertValidISBN: anISBN
 	(catalog includesKey: anISBN) 
 	ifFalse: [self error: self class invalidISBNError]! !
 
-!Cart methodsFor: 'asserts' stamp: 'pfu 11/2/2024 09:41:19'!
+!Cart methodsFor: 'asserts' stamp: 'PFU 11/9/2024 20:29:43'!
 purchaseList
-	^ self listYourself, '|', (self purchaseListSize asString).! !
+	^ self listYourself, '|', (self amountOfItems asString).! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
 !classDefinition: 'Cart class' category: #TusLibros!
 Cart class
 	instanceVariableNames: ''!
-
 
 !Cart class methodsFor: 'errors' stamp: 'pfu 11/2/2024 09:15:24'!
 invalidAmountOfBooksError
@@ -428,14 +480,14 @@ acceptingItemsFrom: aPriceList
 
 !classDefinition: #Cashier category: #TusLibros!
 Object subclass: #Cashier
-	instanceVariableNames: 'merchant'
+	instanceVariableNames: 'merchant salesBook'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'TusLibros'!
 
-!Cashier methodsFor: 'asserts' stamp: 'pfu 11/5/2024 19:27:29'!
+!Cashier methodsFor: 'asserts' stamp: 'PFU 11/9/2024 09:59:19'!
 assertCartNotEmpty: aCart
-	aCart isEmpty ifTrue:[self error: 'Empty cart'].! !
+	aCart isEmpty ifTrue:[self error: self emptyCartError].! !
 
 !Cashier methodsFor: 'asserts' stamp: 'pfu 11/8/2024 17:57:03'!
 assertValidExpirationDate: aCreditCard withCurrent: aCurrentDate
@@ -443,38 +495,30 @@ assertValidExpirationDate: aCreditCard withCurrent: aCurrentDate
 ! !
 
 
-!Cashier methodsFor: 'checkout' stamp: 'pfu 11/8/2024 17:37:12'!
-checkout: aCart
-	| total |
-	self assertCartNotEmpty: aCart.
-	
-	"ex implementacion.."
-	"priceList keysAndValuesDo: [:book :price | total := total + (price * (aCart getAmountOf: book))]."
-	total := aCart total.
-	
-	^total
-	
-	! !
-
-!Cashier methodsFor: 'checkout' stamp: 'pfu 11/8/2024 17:58:02'!
+!Cashier methodsFor: 'checkout' stamp: 'PFU 11/9/2024 19:01:09'!
 checkout: aCart with: aCreditCard onDate: currentDate
 	| total |
 	self assertCartNotEmpty: aCart.
 	total := aCart total.
 
-	
-	self assertValidExpirationDate: aCreditCard withCurrent: currentDate.
+	self assertValidExpirationDate: aCreditCard withCurrent: currentDate.	
 	merchant debit: total from: aCreditCard.
 	
-	^total
+	
+	^salesBook register: total from: aCreditCard owner onCart: aCart.
 	
 	! !
 
 
+!Cashier methodsFor: 'errors' stamp: 'PFU 11/9/2024 09:59:45'!
+emptyCartError
+	^'Cannot checkout empty cart'! !
 
-!Cashier methodsFor: 'initialize' stamp: 'pfu 11/8/2024 17:38:00'!
-initializeWith: aMerchant 
-	merchant := aMerchant! !
+
+!Cashier methodsFor: 'initialize' stamp: 'PFU 11/9/2024 18:16:21'!
+initializeWith: aMerchant savingOn: aSalesBook  
+	merchant := aMerchant.
+	salesBook := aSalesBook.! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
@@ -482,14 +526,14 @@ initializeWith: aMerchant
 Cashier class
 	instanceVariableNames: ''!
 
-!Cashier class methodsFor: 'instance creation' stamp: 'pfu 11/8/2024 17:38:16'!
-with: aMerchant
-	^self new initializeWith: aMerchant! !
+!Cashier class methodsFor: 'instance creation' stamp: 'PFU 11/9/2024 18:16:05'!
+with: aMerchant savingOn: aSalesBook 
+	^self new initializeWith: aMerchant savingOn: aSalesBook! !
 
 
 !classDefinition: #CreditCard category: #TusLibros!
 Object subclass: #CreditCard
-	instanceVariableNames: 'name number expiration'
+	instanceVariableNames: 'owner number expiration'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'TusLibros'!
@@ -504,11 +548,24 @@ hasNumber: aCreditCardNumber
 	^number = aCreditCardNumber ! !
 
 
-!CreditCard methodsFor: 'initialization' stamp: 'pfu 11/8/2024 17:54:26'!
+!CreditCard methodsFor: 'initialization' stamp: 'PFU 11/9/2024 09:56:01'!
 initializeFor: aPerson with: aNumber expiringOn: anExpirationMonthOfYear
-	name := aPerson.
+	owner := aPerson.
 	number := aNumber.
 	expiration := anExpirationMonthOfYear.! !
+
+
+!CreditCard methodsFor: 'getters' stamp: 'PFU 11/9/2024 09:56:16'!
+expiration
+	^expiration! !
+
+!CreditCard methodsFor: 'getters' stamp: 'PFU 11/9/2024 09:56:12'!
+number
+	^number! !
+
+!CreditCard methodsFor: 'getters' stamp: 'PFU 11/9/2024 09:56:05'!
+owner
+	^owner! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
@@ -529,50 +586,136 @@ assertNumberHas16Digits: aNumber
 
 !classDefinition: #RESTAdapter category: #TusLibros!
 Object subclass: #RESTAdapter
-	instanceVariableNames: 'validator idToCart priceList currentId'
+	instanceVariableNames: 'validator idToCart priceList currentCartId today salesBook merchant userIdToCart transactionIdToSale currentTransactionId'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'TusLibros'!
 
-!RESTAdapter methodsFor: 'ids' stamp: 'pfu 11/8/2024 20:26:39'!
-createNewId
-	currentId := currentId + 1.
-	^currentId! !
+!RESTAdapter methodsFor: 'ids' stamp: 'PFU 11/9/2024 09:46:11'!
+getCartWithId: aCartId
+	^ idToCart at: aCartId ifAbsent: [self error: self invalidCartIdError].! !
+
+!RESTAdapter methodsFor: 'ids' stamp: 'PFU 11/9/2024 20:26:37'!
+getCartsFromUser: aUserId
+	^ userIdToCart at: aUserId ifAbsent: [self error: self noCartsForUserError].! !
+
+!RESTAdapter methodsFor: 'ids' stamp: 'PFU 11/9/2024 19:17:19'!
+mapUserId: aUserId toCart: aCart
+
+	^ (userIdToCart at: aUserId ifAbsentPut:[Set new]) add: aCart! !
+
+!RESTAdapter methodsFor: 'ids' stamp: 'PFU 11/9/2024 20:37:20'!
+newCartIdFor: aCart
+	| cartId |
+	cartId := currentCartId.
+	idToCart at: cartId put: aCart.
+	currentCartId := currentCartId + 1.
+	^ cartId.! !
+
+!RESTAdapter methodsFor: 'ids' stamp: 'PFU 11/9/2024 19:31:09'!
+newTransactionIdFor: aSale
+	currentTransactionId := currentTransactionId + 1.
+	transactionIdToSale at: currentTransactionId put: aSale.
+	^ currentTransactionId 
+	! !
+
+!RESTAdapter methodsFor: 'ids' stamp: 'PFU 11/9/2024 20:38:22'!
+totalFromTransaction: transactionId 
+	^((transactionIdToSale at: transactionId) total)! !
 
 
-!RESTAdapter methodsFor: 'initialization' stamp: 'pfu 11/8/2024 20:28:38'!
-validatingWith: aCredentialValidator priceList: aPriceList 
+!RESTAdapter methodsFor: 'initialization' stamp: 'PFU 11/9/2024 19:32:17'!
+validatingWith: aCredentialValidator priceList: aPriceList merchant: aMerchantProcessor onDate: currentDate salesBook: aSalesBook
 	validator := aCredentialValidator.
 	priceList := aPriceList.
-	currentId := 0.
-	idToCart  := Dictionary new.! !
+	currentCartId := 0.
+	currentTransactionId := 0.
+	transactionIdToSale := Dictionary new.
+	idToCart  := Dictionary new.
+	userIdToCart := Dictionary new.
+	salesBook := aSalesBook.
+	today := currentDate.
+	merchant := aMerchantProcessor.
+	
+	
+! !
 
 
-!RESTAdapter methodsFor: 'cart' stamp: 'pfu 11/8/2024 20:37:02'!
-addToCart: cartId amount: amountOfBooks of: aBook
+!RESTAdapter methodsFor: 'cart' stamp: 'PFU 11/9/2024 09:46:25'!
+addToCart: aCartId amount: amountOfBooks of: aBook
 	| cart |
-	cart := idToCart at: cartId.
+	cart := self getCartWithId: aCartId.
 	
 	cart addBook: aBook amount: amountOfBooks.
 	 
 	! !
 
-!RESTAdapter methodsFor: 'cart' stamp: 'pfu 11/8/2024 20:27:14'!
+!RESTAdapter methodsFor: 'cart' stamp: 'PFU 11/9/2024 19:20:05'!
+checkoutCart: cartId for: anOwner withCard: aCreditCardNumber expiringOn: anExpirationYearMonth
+	| cart card cashier transactionId sale |
+	cart := self getCartWithId: cartId.
+	card := CreditCard for: anOwner with: aCreditCardNumber expiringOn: anExpirationYearMonth.
+	cashier := Cashier with: merchant savingOn: salesBook.
+	
+	sale := cashier checkout: cart with: card onDate: today.	
+	transactionId := self newTransactionIdFor: sale.
+	
+	^transactionId
+	
+	
+	! !
+
+!RESTAdapter methodsFor: 'cart' stamp: 'PFU 11/9/2024 20:36:09'!
 createCartForUser: aUserId withPassword: aPassword
-	| cart id |
+	| cart cartId |
 	validator validateUser: aUserId with: aPassword.
 	
 	cart := Cart acceptingItemsFrom: priceList.
-	id := self createNewId.
-	idToCart at: id put: cart.
 	
-	^id! !
+	cartId := self newCartIdFor: cart.
+	
+	self mapUserId: aUserId toCart: cart.
+	
+	^cartId! !
 
-!RESTAdapter methodsFor: 'cart' stamp: 'pfu 11/8/2024 20:30:27'!
+!RESTAdapter methodsFor: 'cart' stamp: 'PFU 11/9/2024 09:45:40'!
 listCart: aCartId
-	| cart |
-	cart := idToCart at: aCartId.
+	| cart |	
+	cart := self getCartWithId: aCartId.
 	^ cart listYourself.! !
+
+!RESTAdapter methodsFor: 'cart' stamp: 'PFU 11/9/2024 20:31:16'!
+listPurchasesFor: aUserId withPassword: aPassword
+	| carts totalItems response |
+	validator validateUser: aUserId with: aPassword.
+	
+	carts := self getCartsFromUser: aUserId.
+	
+	totalItems := 0.
+	response := String new.
+	
+	carts do: [:aCart | 
+		totalItems := totalItems + aCart amountOfItems.
+		response := response, aCart listYourself.
+	].
+	
+	response := response, '|', totalItems asString.
+	^ response
+	
+	! !
+
+
+!RESTAdapter methodsFor: 'errors' stamp: 'PFU 11/9/2024 10:01:25'!
+emptyCartError
+	^'Cannot checkout empty cart'! !
+
+!RESTAdapter methodsFor: 'errors' stamp: 'PFU 11/9/2024 09:44:28'!
+invalidCartIdError
+	^ 'Invalid Cart Id'! !
+
+!RESTAdapter methodsFor: 'errors' stamp: 'PFU 11/9/2024 20:26:48'!
+noCartsForUserError
+	^ 'This user does not have any carts'! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
@@ -580,14 +723,66 @@ listCart: aCartId
 RESTAdapter class
 	instanceVariableNames: ''!
 
-!RESTAdapter class methodsFor: 'instance creation' stamp: 'pfu 11/8/2024 20:23:03'!
-validatingWith: credentialValidator priceList: priceList 
-	^self new validatingWith: credentialValidator priceList: priceList.! !
+!RESTAdapter class methodsFor: 'instance creation' stamp: 'PFU 11/9/2024 18:13:10'!
+validatingWith: credentialValidator priceList: priceList merchant: merchant onDate: onDate salesBook: salesBook    
+	^self new validatingWith: credentialValidator priceList: priceList merchant: merchant onDate: onDate salesBook: salesBook.! !
+
+
+!classDefinition: #Sale category: #TusLibros!
+Object subclass: #Sale
+	instanceVariableNames: 'name cart total clientName'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'TusLibros'!
+
+!Sale methodsFor: 'getters' stamp: 'PFU 11/9/2024 19:23:50'!
+total
+	^total! !
+
+
+!Sale methodsFor: 'initialization' stamp: 'PFU 11/9/2024 19:23:11'!
+initializeFrom: aClientName with: aCart total: aTotal 
+	clientName := aClientName.
+	cart := aCart.
+	total := aTotal.! !
+
+"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
+
+!classDefinition: 'Sale class' category: #TusLibros!
+Sale class
+	instanceVariableNames: ''!
+
+!Sale class methodsFor: 'instance creation' stamp: 'PFU 11/9/2024 19:22:57'!
+from: aClientName with: aCart total: aTotal 
+	^self new initializeFrom: aClientName with: aCart total: aTotal ! !
+
+
+!classDefinition: #SalesBook category: #TusLibros!
+Object subclass: #SalesBook
+	instanceVariableNames: 'sales'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'TusLibros'!
+
+
+!SalesBook methodsFor: 'initialization' stamp: 'PFU 11/9/2024 20:38:51'!
+initialize
+	super initialize.
+	sales := OrderedCollection new.
+! !
+
+!SalesBook methodsFor: 'initialization' stamp: 'PFU 11/9/2024 20:41:24'!
+register: total from: aUsername onCart: aCart
+	|sale|
+	sale := Sale from: aUsername with: aCart total: total.
+	sales add: sale.
+	^sale.
+! !
 
 
 !classDefinition: #SetupTestObjectsFactory category: #TusLibros!
 Object subclass: #SetupTestObjectsFactory
-	instanceVariableNames: 'robbed empty numberOfReceivedRequests stubMerchantProcessor'
+	instanceVariableNames: 'robbed empty numberOfReceivedRequests stubMerchantProcessor salesBook'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'TusLibros'!
@@ -606,6 +801,10 @@ expiredCreditCard
 robbedCreditCard
 
 	^ CreditCard for: 'pedro' with: 9999999999999999 expiringOn: GregorianMonthOfYear current next.! !
+
+!SetupTestObjectsFactory methodsFor: 'credit cards' stamp: 'PFU 11/9/2024 19:00:21'!
+salesBook
+	^salesBook! !
 
 !SetupTestObjectsFactory methodsFor: 'credit cards' stamp: 'pfu 11/8/2024 18:29:15'!
 stubMerchantProcessor
@@ -645,10 +844,11 @@ credentialValidator
 	^ StubCredentialValidator new.! !
 
 
-!SetupTestObjectsFactory methodsFor: 'initialization' stamp: 'pfu 11/8/2024 18:29:24'!
+!SetupTestObjectsFactory methodsFor: 'initialization' stamp: 'PFU 11/9/2024 18:59:43'!
 initialize
 	super initialize.
-	stubMerchantProcessor := 	StubMerchantProcessor robbed: (Set with: 9999999999999999) empty: (Set with: 1000000000000000).! !
+	stubMerchantProcessor := 	StubMerchantProcessor robbed: (Set with: 9999999999999999) empty: (Set with: 1000000000000000).
+	salesBook :=  SalesBook new.! !
 
 
 !classDefinition: #StubCredentialValidator category: #TusLibros!
@@ -658,9 +858,9 @@ Object subclass: #StubCredentialValidator
 	poolDictionaries: ''
 	category: 'TusLibros'!
 
-!StubCredentialValidator methodsFor: 'validation' stamp: 'pfu 11/8/2024 20:08:14'!
+!StubCredentialValidator methodsFor: 'validation' stamp: 'PFU 11/9/2024 09:39:59'!
 validateUser: aUserId with: aPassword
-	(aUserId = 'pedro' and: [aPassword ~= '123']) ifTrue: [self error: self class invalidCredentials]! !
+	(aUserId = 'pedro' and: [aPassword ~= '123']) ifTrue: [self error: self class invalidCredentials].! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
