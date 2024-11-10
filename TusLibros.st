@@ -103,59 +103,68 @@ TestCase subclass: #CashierTest
 	poolDictionaries: ''
 	category: 'TusLibros'!
 
-!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 19:03:19'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 21:58:50'!
+setupCart
+
+	^ Cart acceptingItemsFrom: factory priceList! !
+
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 21:56:44'!
+setupCashierFor: aCart
+
+	^ Cashier with: factory stubMerchantProcessor savingOn: factory salesBook for: aCart! !
+
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 22:01:05'!
 test01CannotCheckoutEmptyCart
 	|cart cashier|
-	cart := Cart acceptingItemsFrom: factory priceList.
-	cashier := Cashier new.
+	cart := self setupCart.
+	cashier := self setupCashierFor: cart.
 	
-	self should: [cashier checkout: cart with: factory validCreditCard onDate: factory today.]
+	self should: [cashier checkoutWith: factory validCreditCard onDate: factory today.]
 	raise: Error - MessageNotUnderstood
 	withExceptionDo: [:error | 
 		self assert: error messageText equals: cashier emptyCartError].
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 19:24:06'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 22:01:21'!
 test02CashierCheckoutsCorrectPriceForCart
 	|cart cashier sale |
-	cart := Cart acceptingItemsFrom: factory priceList.
+	cart := self setupCart.
 	cart addBook: '1' amount: 2.
 	
-	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
+	cashier := self setupCashierFor: cart.
 	
-	sale := cashier checkout: cart with: factory validCreditCard onDate: factory today.
+	sale := cashier checkoutWith: factory validCreditCard onDate: factory today.
 	
 	self assert: sale total equals: 50.
 	
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 19:24:20'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 22:02:19'!
 test03CashierCheckoutsCorrectPriceForCartWithDifferentItems
 	|cart cashier sale |
-	cart := Cart acceptingItemsFrom: factory priceList.
+	cart := self setupCart.
 	cart addBook: '1' amount: 2.
 	cart addBook: '3' amount: 5.
 	
-	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
+	cashier := self setupCashierFor: cart.
 	
-	sale := cashier checkout: cart with: factory validCreditCard onDate: factory today.
+	sale := cashier checkoutWith: factory validCreditCard onDate: factory today.
 	
 	self assert: sale total equals: 425.
 	
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 20:29:43'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 22:02:23'!
 test04CashierCantCheckoutWithExpiredCard
-	|cart cashier today |
-	cart := Cart acceptingItemsFrom: factory priceList.
+	|cart cashier |
+	cart := self setupCart.
 	cart addBook: '1' amount: 2.
-	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
-	today := factory today.
+	cashier := self setupCashierFor: cart.
 	
-	self should: [cashier checkout: cart with: factory expiredCreditCard onDate: today]
+	self should: [cashier checkoutWith: factory expiredCreditCard onDate: factory today]
 	raise: Error - MessageNotUnderstood 
 	withExceptionDo: [:error |
 		self assert: error messageText equals: 'Expired credit card'.
@@ -167,15 +176,15 @@ test04CashierCantCheckoutWithExpiredCard
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 20:29:43'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 22:02:26'!
 test05CashierCantCheckoutWithStolenCard
 	|cart cashier  |
-	cart := Cart acceptingItemsFrom: factory priceList.
+	cart := self setupCart.
 	cart addBook: '1' amount: 2.
-	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
+	cashier := self setupCashierFor: cart.
 
 	
-	self should: [cashier checkout: cart with: factory robbedCreditCard onDate: factory today]
+	self should: [cashier checkoutWith: factory robbedCreditCard onDate: factory today]
 	raise: Error - MessageNotUnderstood 
 	withExceptionDo: [:error | 
 		self assert: error messageText equals: 'Robbed credit card'.
@@ -187,14 +196,14 @@ test05CashierCantCheckoutWithStolenCard
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 20:29:43'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 22:02:29'!
 test06CashierCantCheckoutWithEmptyCard
 	|cart cashier |
-	cart := Cart acceptingItemsFrom: factory priceList.
+	cart := self setupCart.
 	cart addBook: '1' amount: 2.
-	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
+	cashier := self setupCashierFor: cart.	
 	
-	self should: [cashier checkout: cart with: factory emptyCreditCard onDate: factory today]
+	self should: [cashier checkoutWith: factory emptyCreditCard onDate: factory today]
 	raise: Error - MessageNotUnderstood
 	withExceptionDo: [:error |
 		self assert: error messageText equals: 'Empty credit card'.
@@ -207,14 +216,15 @@ test06CashierCantCheckoutWithEmptyCard
 	
 	! !
 
-!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 19:24:41'!
+!CashierTest methodsFor: 'test' stamp: 'PFU 11/9/2024 22:02:51'!
 test07CashierCheckoutsWithValidCard
-	|cart cashier transactionId sale |
-	cart := Cart acceptingItemsFrom: factory priceList.
-	cart addBook: '1' amount: 2.
-	cashier := Cashier with: factory stubMerchantProcessor savingOn: factory salesBook.
+	|cart cashier sale |
+	cart := self setupCart.
+	cashier := self setupCashierFor: cart.	
 	
-	sale := cashier checkout: cart with: factory validCreditCard onDate: factory today.
+	cart addBook: '1' amount: 2.
+
+	sale := cashier checkoutWith: factory validCreditCard onDate: factory today.
 	
 	self assert: sale total equals: 50.
 	self assert: factory stubMerchantProcessor requestsReceived equals: 1.
@@ -480,10 +490,14 @@ acceptingItemsFrom: aPriceList
 
 !classDefinition: #Cashier category: #TusLibros!
 Object subclass: #Cashier
-	instanceVariableNames: 'merchant salesBook'
+	instanceVariableNames: 'merchant salesBook cart'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'TusLibros'!
+
+!Cashier methodsFor: 'asserts' stamp: 'PFU 11/9/2024 21:59:59'!
+assertCartNotEmpty
+	cart isEmpty ifTrue:[self error: self emptyCartError].! !
 
 !Cashier methodsFor: 'asserts' stamp: 'PFU 11/9/2024 09:59:19'!
 assertCartNotEmpty: aCart
@@ -509,16 +523,30 @@ checkout: aCart with: aCreditCard onDate: currentDate
 	
 	! !
 
+!Cashier methodsFor: 'checkout' stamp: 'PFU 11/9/2024 22:00:49'!
+checkoutWith: aCreditCard onDate: currentDate
+	
+	self assertCartNotEmpty.
+
+	self assertValidExpirationDate: aCreditCard withCurrent: currentDate.	
+	merchant debit: cart total from: aCreditCard.
+	
+	
+	^salesBook register: cart total from: aCreditCard owner onCart: cart.
+	
+	! !
+
 
 !Cashier methodsFor: 'errors' stamp: 'PFU 11/9/2024 09:59:45'!
 emptyCartError
 	^'Cannot checkout empty cart'! !
 
 
-!Cashier methodsFor: 'initialize' stamp: 'PFU 11/9/2024 18:16:21'!
-initializeWith: aMerchant savingOn: aSalesBook  
+!Cashier methodsFor: 'initialize' stamp: 'PFU 11/9/2024 21:55:38'!
+initializeWith: aMerchant savingOn: aSalesBook for: aCart   
 	merchant := aMerchant.
-	salesBook := aSalesBook.! !
+	salesBook := aSalesBook.
+	cart := aCart.! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
@@ -526,9 +554,9 @@ initializeWith: aMerchant savingOn: aSalesBook
 Cashier class
 	instanceVariableNames: ''!
 
-!Cashier class methodsFor: 'instance creation' stamp: 'PFU 11/9/2024 18:16:05'!
-with: aMerchant savingOn: aSalesBook 
-	^self new initializeWith: aMerchant savingOn: aSalesBook! !
+!Cashier class methodsFor: 'instance creation' stamp: 'PFU 11/9/2024 22:02:02'!
+with: aMerchant savingOn: aSalesBook for: aCart  
+	^self new initializeWith: aMerchant savingOn: aSalesBook for: aCart! !
 
 
 !classDefinition: #CreditCard category: #TusLibros!
