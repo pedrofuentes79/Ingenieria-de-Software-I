@@ -5,180 +5,194 @@ TestCase subclass: #TaskTest
 	poolDictionaries: ''
 	category: '20241C'!
 
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 20:05:13'!
+assignVessels
 
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 15:31:24'!
-dashboard: aStartDate
+	^ ConcreteTask named: 'AssignVessels' startingOn: July/1/2024 assignedTo: self ds dependingOn: {} requiring: 16*hour! !
 
-	^ Task named: 'Dashboard Dark Vessels' effort: 10 * hour startingAt: aStartDate dependingOn: Set new! !
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 21:22:22'!
+assignVesselsDependingOnDocu
 
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 15:31:00'!
+	^ ConcreteTask named: 'AssignVessels' startingOn: July/1/2024 assignedTo: self ds dependingOn: {self documentacion } requiring: 16*hour! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 20:36:23'!
+dashboard
+
+	^ ConcreteTask named: 'Dashboard' startingOn: July/1/2024 assignedTo: self pfuentes dependingOn: {} requiring: 3*hour! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 19:48:13'!
+documentacion
+
+	^ ConcreteTask named: 'Docu' startingOn: July/1/2024 assignedTo: self pfuentes dependingOn: {} requiring: 6*hour! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 19:48:13'!
+test01TaskEndsOnStartDateIfDevHasSameEffort
+	|task|
+	task := self documentacion.
+	
+	self assert: (task endsOn: July/1/2024)
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 19:09:01'!
+test02TaskEndsOnStartDateIfDevHasLessEffort
+	|task|
+	task := ConcreteTask named: 'Docu' startingOn: July/1/2024 assignedTo: self pfuentes dependingOn: {} requiring: 10*hour.
+	
+	self deny: (task endsOn: July/1/2024)
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 20:05:13'!
+test03TaskEndsOnStartDateIfTeamHasSameEffort
+	|task|
+	task := self assignVessels.
+	
+	"este test NO considera que el esfuerzo SE DIVIDE EN TODO EL EQUIPO. Es decir, si la tarea toma 10 horas y las dos personas del equipo trabajan 5 por dia, la tarea termina el mismo dia. En Team >> timeToComplete: aTaskTime esta comentada la solucion que hace que esto sea asi"
+	
+	self assert: (task endsOn: July/3/2024)
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 20:05:13'!
+test04TaskStartsOnDesiredStartDateWhenItDoesNotHaveDependencies
+	|task|
+	task := self assignVessels.
+	
+	self assert: (task startsOn: July/1/2024).
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 20:15:11'!
+test05TaskDoesNotStartsOnDesiredStartDateWhenItHasDependenciesThatForbidItsStartDate
+	|task|
+	
+	task := ConcreteTask named: 'AssignVessels' startingOn: July/1/2024 assignedTo: self ds dependingOn: {self documentacion} requiring: 16*hour.
+	
+	self deny: (task startsOn: July/1/2024).
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 20:36:36'!
+test06TaskStartsOnDesiredStartDateEvenIfDependenciesFinishEarlier
+	|task|
+	
+	task := ConcreteTask named: 'AssignVessels' startingOn: July/5/2024 assignedTo: self ds dependingOn: {self documentacion. self dashboard } requiring: 16*hour.
+	
+	self assert: (task startsOn: July/5/2024).
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 21:15:40'!
+test07TaskWithDependenciesAndEarlyStartDateNeedsToWaitForItsDependencies
+	|task|
+	task := ConcreteTask named: 'AssignVessels' startingOn: July/1/2024 assignedTo: self ds dependingOn: {self documentacion} requiring: 16*hour.
+	
+	self assert: (task startsOn: July/2/2024).
+	self assert: (task endsOn: July/4/2024).! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 21:22:47'!
+test08ProjectStartsOnEarliestTaskStartDate
+	|project|
+	
+	project := Project named: 'Dark vessels' with: {self documentacion. self assignVesselsDependingOnDocu}.
+	
+	self assert: (project startsOn: self documentacion startDate).
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 21:22:43'!
+test09ProjectDoesNotStartsLaterThanOnEarliestTaskStartDate
+	|project|
+	
+	project := Project named: 'Dark vessels' with: {self documentacion. self assignVesselsDependingOnDocu}.
+	
+	self deny: (project startsOn: self assignVesselsDependingOnDocu startDate ).
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 21:22:39'!
+test10ProjectEndsOnLatestTaskEndDate
+	|project|
+	
+	project := Project named: 'Dark vessels' with: {self documentacion. self assignVesselsDependingOnDocu}.
+	
+	self assert: (project endsOn: self assignVesselsDependingOnDocu endDate).
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 21:28:24'!
+test11ProjectDoesNotHaveOverworkWhenDevsDontHaveOverwork
+	|project|
+	
+	project := Project named: 'Dark vessels' with: {self documentacion}.
+	
+	self deny: project hasOverwork
+	
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 21:50:02'!
+test12ProjectHasOverworkWhenTasksHappenInTheSameDay
+	|project|
+	
+	project := Project named: 'Dark vessels' with: {self documentacion. self dashboard }.
+	
+	self assert: project hasOverwork
+	
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/11/2024 21:49:39'!
+test13ProjectDoesNotHaveOverworkWhenTasksAreSeparated
+	|project dash docu |
+	
+	docu := ConcreteTask named: 'Docu' startingOn: July/1/2024 assignedTo: self pfuentes dependingOn: {} requiring: 30*hour.
+	dash := ConcreteTask named: 'Dash' startingOn: July/10/2024 assignedTo: self pfuentes dependingOn: {} requiring: 1*hour.
+	
+	
+	project := Project named: 'Dark vessels' with: {docu. dash }.
+	
+	self deny: project hasOverwork.
+
+	
+	! !
+
+
+!TaskTest methodsFor: 'support' stamp: 'PFU 11/11/2024 19:24:17'!
+ds
+	^ Team named: 'ASADS' with: {self pfuentes. self iiragui}! !
+
+!TaskTest methodsFor: 'support' stamp: 'PFU 11/11/2024 19:21:57'!
+iiragui
+	^ Developer named: 'iiragui' working: 8*hour/day earning: 1500 * peso / hour.! !
+
+!TaskTest methodsFor: 'support' stamp: 'PFU 11/11/2024 19:16:18'!
 pfuentes
-
-	^ Developer named: 'pfuentes' working: 6 * hour / day gettingPaid: 1000 * peso / hour! !
-
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 15:31:00'!
-test01ATaskCanComputeItsEndTimeForADev
-
-	| task dev startDate |
-	startDate := November / 4 / 2024.
-	task := Task named: 'Documentacion Dark Vessels' effort: 3 * hour startingAt: startDate dependingOn: Set new.
-	
-	dev := self pfuentes.
-	
-	task assignTo: dev.
-	
-	self assert: (task end) equals: startDate.! !
-
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 15:31:00'!
-test02ATaskCanEndOnNextDay
-
-	| task dev startDate |
-	startDate := November / 4 / 2024.
-	task := Task named: 'Documentacion Dark Vessels' effort: 12 * hour startingAt: startDate dependingOn: Set new.
-	
-	dev := self pfuentes.
-	
-	task assignTo: dev.
-	
-	self assert: task end equals: startDate next.! !
-
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 15:26:19'!
-test03ATaskCannotHaveAnEndDateWithoutAnAssignee
-
-	| task startDate |
-	startDate := November / 4 / 2024.
-	task := Task named: 'Documentacion Dark Vessels' effort: 12 * hour startingAt: startDate dependingOn: Set new.
-
-	
-	self should: [task end]
-	raise: Error - MessageNotUnderstood 
-	withExceptionDo: [:error | 
-		self assert: error messageText equals: Task noAssignedDevError.
-		].
-! !
-
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 15:31:13'!
-test04ATaskKnowsItsCost
-	| task dev startDate |
-	startDate := November / 4 / 2024.
-	task := self dashboard: startDate.
-	
-	dev := self pfuentes.
-	
-	task assignTo: dev.
-	
-	self assert: (task cost) equals: 12000 * peso.! !
-
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 15:31:13'!
-test05TaskCantEndIfItsDependenciesArentFinished
-	| dev startDate dashboard documentacion |
-	startDate := November / 4 / 2024.
-	
-	dashboard := self dashboard: startDate.
-	documentacion := Task named: 'Documentacion Dark Vessels' effort: 10 * hour startingAt: startDate dependingOn: (Set with: dashboard).
-	dev := self pfuentes.
-	
-	dashboard assignTo: dev.
-	documentacion assignTo: dev.
-	
-	self should: [documentacion end]
-	raise: Error - MessageNotUnderstood 
-	withExceptionDo: [:error | 
-		self assert: error messageText equals: Task unfinishedDependenciesError.
-		]! !
-
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 15:45:20'!
-test06TaskCanEndIfItsDependenciesHaveFinished
-	| dev startDate dashboard documentacion dashboardEndDate |
-	startDate := November / 4 / 2024.
-	
-	dashboard := self dashboard: startDate.
-	documentacion := Task named: 'Documentacion Dark Vessels' effort: 10 * hour startingAt: startDate dependingOn: (Set with: dashboard).
-	dev := self pfuentes.
-	
-	dashboard assignTo: dev.
-	documentacion assignTo: dev.
-	
-	dashboardEndDate := dashboard end.
-	self assert: (documentacion endStartingAt: dashboardEndDate next) equals: (November / 7 / 2024)! !
-
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 15:48:15'!
-test07TaskCannotStartBeforeStartDate
-	| dev startDate dashboard documentacion dashboardEndDate |
-	startDate := November / 4 / 2024.
-	
-	dashboard := self dashboard: startDate.
-	documentacion := Task named: 'Documentacion' effort: 10 * hour startingAt: (November/15/2024) dependingOn: (Set with: dashboard).
-	dev := self pfuentes.
-	
-	dashboard assignTo: dev.
-	documentacion assignTo: dev.
-	
-	dashboardEndDate := dashboard end.
-	self should: [documentacion endStartingAt: dashboardEndDate next]
-	raise: Error - MessageNotUnderstood
-	withExceptionDo: [:error | 
-		self assert: error messageText equals: Task triedToStartBeforeStartDateError].
-	! !
-
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 16:34:58'!
-test08AProjectCanComputeItsEndTime
-	| dev project dashboard documentacion |
-	project := Project named: 'Dark Vessels'.
-	dev := self pfuentes.
-	dashboard := Task named: 'Dashboard' effort: 2 * hour startingAt: November / 4 / 2024 dependingOn: Set new.
-	documentacion := Task named: 'Documentacion' effort: 10 * hour startingAt: November / 6 / 2024 dependingOn: (Set with: dashboard).
-	
-	documentacion assignTo: dev.
-	dashboard assignTo: dev.
-	
-	project add: documentacion.
-	project add: dashboard.
-	
-	self assert: project end equals: (November / 7 / 2024).
-	
-	
-	! !
-
-!TaskTest methodsFor: 'test' stamp: 'PFU 11/10/2024 17:38:09'!
-test09ProjectWithNestedProject
-	| project dashboard subproject |
-	project := Project named: 'Dark Vessels'.
-	subproject := Project named: 'Front'.
-	dashboard := Task named: 'Dashboard' effort: 8 * hour startingAt: November / 4 / 2024 dependingOn: Set new.
-	dashboard assignTo: self pfuentes.
-	
-	project add: subproject.
-	subproject add: dashboard.
-	
-	self assert: project end equals: (November / 5 / 2024).
-	
-	
-	! !
+	^ Developer named: 'pfuentes' working: 6*hour/day earning: 1000 * peso / hour.! !
 
 
-!classDefinition: #Developer category: #'20241C'!
-Object subclass: #Developer
-	instanceVariableNames: 'name effort cost'
+!classDefinition: #Responsible category: #'20241C'!
+Object subclass: #Responsible
+	instanceVariableNames: 'name'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: '20241C'!
 
-!Developer methodsFor: 'initialization' stamp: 'PFU 11/10/2024 09:29:20'!
-initializeNamed: aName working: anAmountOfHours gettingPaid: aCost  
+!Responsible methodsFor: 'work' stamp: 'PFU 11/11/2024 21:25:26'!
+timeToComplete: aTaskTime
+
+	self subclassResponsibility! !
+
+
+!classDefinition: #Developer category: #'20241C'!
+Responsible subclass: #Developer
+	instanceVariableNames: 'dedication cost'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: '20241C'!
+
+!Developer methodsFor: 'effort' stamp: 'PFU 11/11/2024 19:26:05'!
+timeToComplete: aTaskTime
+	^ (aTaskTime / dedication) ceiling! !
+
+
+!Developer methodsFor: 'initialization' stamp: 'PFU 11/11/2024 19:11:32'!
+initializeNamed: aName working: anEffort earning: aCost 
 	name := aName.
-	effort := anAmountOfHours.
+	dedication := anEffort.
 	cost := aCost.! !
-
-
-!Developer methodsFor: 'work' stamp: 'PFU 11/10/2024 09:32:53'!
-costFromWorking: aTimeRangeInDays
-
-	^ aTimeRangeInDays * effort * cost! !
-
-!Developer methodsFor: 'work' stamp: 'PFU 11/10/2024 09:29:47'!
-workOn: aTask from: currentDate
-	^aTask reduceWorkLoadBy: (effort * day) currentDayIs: currentDate next.! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
@@ -186,109 +200,176 @@ workOn: aTask from: currentDate
 Developer class
 	instanceVariableNames: ''!
 
-!Developer class methodsFor: 'instance creation' stamp: 'PFU 11/10/2024 08:57:48'!
-named: aName working: anAmountOfHours gettingPaid: aCost  
-	^self new initializeNamed: aName working: anAmountOfHours gettingPaid: aCost ! !
+!Developer class methodsFor: 'instance creation' stamp: 'PFU 11/11/2024 19:06:10'!
+named: aName working: anEffort earning: aCost 
+	^self new initializeNamed: aName working: anEffort earning: aCost ! !
 
 
-!classDefinition: #NullDeveloper category: #'20241C'!
-Developer subclass: #NullDeveloper
-	instanceVariableNames: ''
+!classDefinition: #Team category: #'20241C'!
+Responsible subclass: #Team
+	instanceVariableNames: 'responsibles'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: '20241C'!
 
-!NullDeveloper methodsFor: 'work' stamp: 'PFU 11/10/2024 09:14:17'!
-workOn: aTask from: currentDate
-	aTask reduceWorkLoadByNullDeveloper.! !
+!Team methodsFor: 'work' stamp: 'PFU 11/11/2024 19:37:46'!
+minimumEffortResponsibleFor: aTaskTime
+
+	^ responsibles inject: responsibles first 
+	into: [:minResponsible :aResponsible | 
+			(aResponsible timeToComplete: aTaskTime) > (minResponsible timeToComplete: aTaskTime) 
+				ifTrue: [aResponsible] ifFalse: [minResponsible]		]! !
+
+!Team methodsFor: 'work' stamp: 'PFU 11/11/2024 19:45:48'!
+timeToComplete: aTaskTime
+	
+	^responsibles max: [:aResponsible | aResponsible timeToComplete: aTaskTime]
+	
+	" otra version, explicada en el test3"
+	"|minEffortResponsible timeItTakesForTheMinEffortResponsible |
+	minEffortResponsible := self minimumEffortResponsibleFor: aTaskTime.
+	timeItTakesForTheMinEffortResponsible := minEffortResponsible timeToComplete: aTaskTime.
+	
+	^ (timeItTakesForTheMinEffortResponsible / responsibles size) ceiling."
+			
+	
+	
+	
+	! !
+
+
+!Team methodsFor: 'initialization' stamp: 'PFU 11/11/2024 19:31:41'!
+initializeNamed: aName with: aDevCollection
+	name := aName.
+	responsibles := aDevCollection! !
+
+"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
+
+!classDefinition: 'Team class' category: #'20241C'!
+Team class
+	instanceVariableNames: ''!
+
+!Team class methodsFor: 'instance creation' stamp: 'PFU 11/11/2024 19:24:31'!
+named: aName with: aDevCollection
+
+	^self new initializeNamed: aName with: aDevCollection! !
 
 
-!classDefinition: #Workable category: #'20241C'!
-Object subclass: #Workable
-	instanceVariableNames: ''
+!classDefinition: #Task category: #'20241C'!
+Object subclass: #Task
+	instanceVariableNames: 'name'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: '20241C'!
 
-!Workable methodsFor: 'as yet unclassified' stamp: 'PFU 11/10/2024 17:33:47'!
-earliestStartDate
-	self shouldBeImplemented.! !
+!Task methodsFor: 'end' stamp: 'PFU 11/11/2024 21:23:52'!
+endDate
+
+	self subclassResponsibility! !
+
+
+!Task methodsFor: 'start' stamp: 'PFU 11/11/2024 21:24:20'!
+endsOn: anEndDate 
+	^ anEndDate = self endDate.! !
+
+!Task methodsFor: 'start' stamp: 'PFU 11/11/2024 21:23:59'!
+startDate
+
+	self subclassResponsibility! !
+
+!Task methodsFor: 'start' stamp: 'PFU 11/11/2024 21:24:34'!
+startsOn: aStartDate 
+	^ aStartDate = self startDate.! !
+
+
+!classDefinition: #ConcreteTask category: #'20241C'!
+Task subclass: #ConcreteTask
+	instanceVariableNames: 'desiredStartDate responsible dependencies effort'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: '20241C'!
+
+!ConcreteTask methodsFor: 'initialization' stamp: 'PFU 11/11/2024 19:08:01'!
+initializeNamed: aName startingOn: aDesiredStartDate assignedTo: aResponsible dependingOn: aDependencies requiring: anEffort 
+	name := aName.
+	desiredStartDate := aDesiredStartDate.
+	responsible := aResponsible.
+	dependencies := aDependencies.
+	effort := anEffort.! !
+
+
+!ConcreteTask methodsFor: 'end' stamp: 'PFU 11/11/2024 21:08:27'!
+endDate
+
+	^ self startDate next: self timeToComplete! !
+
+!ConcreteTask methodsFor: 'end' stamp: 'PFU 11/11/2024 19:19:28'!
+timeToComplete
+
+	^ (responsible timeToComplete: effort) - (1 * day)! !
+
+
+!ConcreteTask methodsFor: 'start' stamp: 'PFU 11/11/2024 20:33:04'!
+maxDependenciesEndDate
+	"will break if dependencies is empty"
+	^ dependencies max:[ :aDependency | aDependency endDate]! !
+
+!ConcreteTask methodsFor: 'start' stamp: 'PFU 11/11/2024 20:40:03'!
+startDate
+
+	^ dependencies ifEmpty:[desiredStartDate ]
+					ifNotEmpty: [self maxDependenciesEndDate next max: desiredStartDate ]! !
+
+"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
+
+!classDefinition: 'ConcreteTask class' category: #'20241C'!
+ConcreteTask class
+	instanceVariableNames: ''!
+
+!ConcreteTask class methodsFor: 'instance creation' stamp: 'PFU 11/11/2024 19:07:49'!
+named: aName startingOn: aDesiredStartDate assignedTo: aResponsible dependingOn: aDependencies requiring: anEffort 
+
+	^self new initializeNamed: aName startingOn: aDesiredStartDate assignedTo: aResponsible dependingOn: aDependencies requiring: anEffort ! !
+
 
 
 !classDefinition: #Project category: #'20241C'!
-Workable subclass: #Project
-	instanceVariableNames: 'workables name finished'
+Task subclass: #Project
+	instanceVariableNames: 'tasks'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: '20241C'!
 
-!Project methodsFor: 'initialization' stamp: 'PFU 11/10/2024 16:17:21'!
-initializeWithName: aName 
+!Project methodsFor: 'initialization' stamp: 'PFU 11/11/2024 20:06:05'!
+initializeNamed: aName with: aTaskCollection 
 	name := aName.
-	workables := OrderedCollection new.
-	finished := false.! !
+	tasks := aTaskCollection.! !
 
 
-!Project methodsFor: 'workables' stamp: 'PFU 11/10/2024 15:04:24'!
-add: aWorkableItem 
-	workables add: aWorkableItem.! !
+!Project methodsFor: 'start' stamp: 'PFU 11/11/2024 21:20:17'!
+endDate
+	^ tasks max: [:aTask | aTask endDate].! !
 
-!Project methodsFor: 'workables' stamp: 'PFU 11/10/2024 16:33:38'!
-end
-	| nextStartDate next|
-	next := self getNextTask.
-	nextStartDate := next earliestStartDate.
-		
-	[finished] whileFalse: [ 
-		nextStartDate := (next endStartingAt: (next earliestStartDate max: nextStartDate)) next.
-		next := self getNextTask.
-	].
-
-	^ nextStartDate previous.
-	
-		! !
-
-!Project methodsFor: 'workables' stamp: 'PFU 11/10/2024 17:37:05'!
-endStartingAt: aStartDate
-	| nextStartDate next|
-	next := self getNextTask.
-	nextStartDate := aStartDate.
-		
-	[finished] whileFalse: [ 
-		nextStartDate := (next endStartingAt: (next earliestStartDate: nextStartDate)) next.
-		next := self getNextTask.
-	].
-
-	^ nextStartDate previous.
-	
-		! !
-
-!Project methodsFor: 'workables' stamp: 'PFU 11/10/2024 16:28:33'!
-getNextTask
-
-	| startables next |
-	startables := workables select: [:aWorkableItem | aWorkableItem canStart].
-	startables isEmpty ifTrue: [finished := true. ^ nil].
-	
-	next :=  startables 
-		inject: startables first 
-		into: [:minItem :each | (each earliestStartDate < minItem earliestStartDate) ifTrue: [each] ifFalse: [minItem]].
-		
-	^ next.! !
+!Project methodsFor: 'start' stamp: 'PFU 11/11/2024 21:19:04'!
+startDate
+	^ tasks min: [:aTask | aTask startDate].! !
 
 
-!Project methodsFor: 'getters' stamp: 'PFU 11/10/2024 17:32:56'!
-canStart
-	^ workables allSatisfy: [:aWorkableItem | aWorkableItem canStart].! !
+!Project methodsFor: 'overwork' stamp: 'PFU 11/11/2024 21:48:44'!
+hasOverlap: aTask with: anotherTask
+	"aTask pertenece a anotherTask"
+	"deberia saber responderlo la propia task?"
 
-!Project methodsFor: 'getters' stamp: 'PFU 11/10/2024 17:35:32'!
-earliestStartDate
-	| earliestTask |
-	earliestTask := (workables 
-		inject: workables first 
-		into: [:minItem :each | (each earliestStartDate < minItem earliestStartDate) ifTrue: [each] ifFalse: [minItem]]).
-		
-	^ earliestTask earliestStartDate ! !
+	^ anotherTask startDate <= aTask startDate and: [aTask startDate <= anotherTask endDate].! !
+
+!Project methodsFor: 'overwork' stamp: 'PFU 11/11/2024 21:47:56'!
+hasOverwork
+	^ tasks anySatisfy: [:aTask | 
+			tasks anySatisfy: [:anotherTask | 
+					"si dos tareas distintas se overlapean => overwork"
+					aTask ~= anotherTask and:[self hasOverlap: aTask with: anotherTask			]
+		]
+	]! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
@@ -296,126 +377,6 @@ earliestStartDate
 Project class
 	instanceVariableNames: ''!
 
-!Project class methodsFor: 'instance creation' stamp: 'PFU 11/10/2024 14:56:39'!
-named: aName
-	^self new initializeWithName: aName! !
-
-
-!classDefinition: #Task category: #'20241C'!
-Workable subclass: #Task
-	instanceVariableNames: 'name effort assignee startDate dependencies'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: '20241C'!
-
-!Task methodsFor: 'initialization' stamp: 'PFU 11/10/2024 08:17:39'!
-assignTo: aDeveloper
-	assignee := aDeveloper.! !
-
-!Task methodsFor: 'initialization' stamp: 'PFU 11/10/2024 15:35:54'!
-initializeNamed: aName effort: anEffort startingAt: aStartDate dependingOn: aTaskCollection   
-	name := aName.
-	effort := anEffort.
-	assignee := NullDeveloper new.
-	startDate := aStartDate.
-	dependencies := aTaskCollection.
-! !
-
-
-!Task methodsFor: 'nulls' stamp: 'PFU 11/10/2024 09:17:21'!
-reduceWorkLoadByNullDeveloper
-	self error: self class noAssignedDevError.! !
-
-
-!Task methodsFor: 'getters' stamp: 'PFU 11/10/2024 16:13:44'!
-canStart
-	^ (self isFinished not) and: [dependencies allSatisfy: [:aTask | aTask isFinished]]! !
-
-!Task methodsFor: 'getters' stamp: 'PFU 11/10/2024 16:23:09'!
-earliestStartDate
-	^startDate! !
-
-!Task methodsFor: 'getters' stamp: 'PFU 11/10/2024 17:37:30'!
-earliestStartDate: aPotentialStartDate
-	^ startDate max: aPotentialStartDate ! !
-
-!Task methodsFor: 'getters' stamp: 'PFU 11/10/2024 15:36:09'!
-isFinished
-	^ effort = 0.! !
-
-
-!Task methodsFor: 'finishing' stamp: 'PFU 11/10/2024 15:00:58'!
-cost
-	| endDate workDays |
-	endDate := self end.
-	workDays := (startDate distanceTo: endDate) + (1 * day).
-		
-	^ assignee costFromWorking: workDays.! !
-
-!Task methodsFor: 'finishing' stamp: 'PFU 11/10/2024 15:06:27'!
-costStartingAt: aStartDate
-	| endDate workDays |
-	endDate := self endStartingAt: aStartDate.
-	workDays := (aStartDate distanceTo: endDate) + (1 * day).
-		
-	^ assignee costFromWorking: workDays.! !
-
-!Task methodsFor: 'finishing' stamp: 'PFU 11/10/2024 15:29:18'!
-end
-	^self endStartingAt: startDate.
-! !
-
-!Task methodsFor: 'finishing' stamp: 'PFU 11/10/2024 15:48:56'!
-endStartingAt: aStartDate
-	self assertFinishedDependencies.
-	self assertValidDate: aStartDate.
-	
-	
-
-	^assignee workOn: self from: aStartDate.
-! !
-
-!Task methodsFor: 'finishing' stamp: 'PFU 11/10/2024 15:38:32'!
-reduceWorkLoadBy: aWorkTime currentDayIs: currentDate
-	| remainingEffort |
-	remainingEffort := effort - aWorkTime.
-	
-	effort := remainingEffort max: (0 * hour).
-
-	(remainingEffort <= 0) 
-		ifTrue:  [^ currentDate previous]
-		ifFalse: [^ assignee workOn: self from: currentDate]
-	! !
-
-
-!Task methodsFor: 'asserts' stamp: 'PFU 11/10/2024 15:48:47'!
-assertFinishedDependencies
-
-	^ (dependencies allSatisfy: [:aTask | aTask isFinished]) ifFalse: [self error: self class unfinishedDependenciesError]! !
-
-!Task methodsFor: 'asserts' stamp: 'PFU 11/10/2024 15:50:06'!
-assertValidDate: aStartDate
-	(aStartDate >= startDate) ifFalse: [self error: self class triedToStartBeforeStartDateError]! !
-
-"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
-
-!classDefinition: 'Task class' category: #'20241C'!
-Task class
-	instanceVariableNames: ''!
-
-!Task class methodsFor: 'instance creation' stamp: 'PFU 11/10/2024 15:33:03'!
-named: aName effort: anEffort startingAt: aStartDate dependingOn: aTask   
-	^self new initializeNamed: aName effort: anEffort startingAt: aStartDate dependingOn: aTask ! !
-
-
-!Task class methodsFor: 'errors' stamp: 'PFU 11/10/2024 09:12:59'!
-noAssignedDevError
-	^'I dont have any Developers assigned'! !
-
-!Task class methodsFor: 'errors' stamp: 'PFU 11/10/2024 15:50:22'!
-triedToStartBeforeStartDateError
-	^'I cannot start before my start date'! !
-
-!Task class methodsFor: 'errors' stamp: 'PFU 11/10/2024 15:28:59'!
-unfinishedDependenciesError
-	^'I cannot be started. My dependencies are unfinished.'! !
+!Project class methodsFor: 'instance creation' stamp: 'PFU 11/11/2024 20:05:51'!
+named: aName with: aTaskCollection 
+	^self new initializeNamed: aName with: aTaskCollection ! !
