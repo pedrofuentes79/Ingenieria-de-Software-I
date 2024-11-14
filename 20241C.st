@@ -149,6 +149,234 @@ test13ProjectDoesNotHaveOverworkWhenTasksAreSeparated
 	
 	! !
 
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 18:26:09'!
+test14DevWithOneTaskPerDayDoesNotHaveOverwork
+	|project dash docu pfuentes dates |
+	
+	pfuentes := self pfuentes.
+	docu := ConcreteTask named: 'Docu' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	dash := ConcreteTask named: 'Dash' startingOn: July/2/2024 assignedTo: pfuentes dependingOn: {} requiring: 2*hour.
+	
+
+	project := Project named: 'Dark vessels' with: {docu. dash }.
+	
+	dates := project overworkingDatesOf: pfuentes.
+	
+	self assert: dates size equals: 0.	
+	
+
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 18:25:46'!
+test15DevWithMoreThanOneTaskPerDayHasOverwork
+	|project pfuentes dates |
+	
+	pfuentes := self pfuentes.
+	project := Project named: 'Dark vessels' with: {self documentacion. self dashboard }.
+	
+	dates := project overworkingDatesOf: pfuentes.
+	
+	self assert: dates size equals: 1.
+	self assert: dates includes: July/1/2024.
+	
+	
+
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 18:53:00'!
+test16DevWithMoreThanOneTaskPerDayOnMultipleDaysHasOverworkOnBothDays
+	|project pfuentes dates task1 task2 task3 task4 |
+	
+	pfuentes := self pfuentes.
+	
+	task1 := ConcreteTask named: 'task1' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task2 := ConcreteTask named: 'task2' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 2*hour.
+	task3 := ConcreteTask named: 'task3' startingOn: July/2/2024 assignedTo: pfuentes dependingOn: {} requiring: 5*hour.
+	task4 := ConcreteTask named: 'task4' startingOn: July/2/2024 assignedTo: pfuentes dependingOn: {} requiring: 2*hour.
+	
+	project := Project named: 'Boring Project' with: {task1. task2. task3. task4 }.
+	dates := project overworkingDatesOf: pfuentes.
+	
+	self assert: dates size equals: 2.
+	self assert: dates includes: July/1/2024.
+	self assert: dates includes: July/2/2024.
+	
+	
+
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 18:55:34'!
+test17ProjectKnowsAmountOfTasksPerDayForAGivenResponsible
+	|project pfuentes dates task1 task2 task3 task4 |
+	
+	pfuentes := self pfuentes.
+	
+	task1 := ConcreteTask named: 'task1' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task2 := ConcreteTask named: 'task2' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 2*hour.
+	task3 := ConcreteTask named: 'task3' startingOn: July/2/2024 assignedTo: pfuentes dependingOn: {} requiring: 5*hour.
+	task4 := ConcreteTask named: 'task4' startingOn: July/2/2024 assignedTo: pfuentes dependingOn: {} requiring: 2*hour.
+	
+	project := Project named: 'Boring Project' with: {task1. task2. task3. task4 }.
+	dates := project worksheetFor: pfuentes.
+	
+	self assert: (dates at: July/1/2024)	 equals: 2.
+	self assert: (dates at: July/2/2024)	 equals: 2.
+
+	
+
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 18:55:24'!
+test18ProjectKnowsAmountOfTasksPerDayForAGivenResponsibleWhenATaskSpansOverMultipleDays
+	|project pfuentes dates task1 task2 task3 task4 |
+	
+	pfuentes := self pfuentes.
+	
+	task1 := ConcreteTask named: 'task1' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task2 := ConcreteTask named: 'task2' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 7*hour.
+	task3 := ConcreteTask named: 'task3' startingOn: July/2/2024 assignedTo: pfuentes dependingOn: {} requiring: 5*hour.
+	task4 := ConcreteTask named: 'task4' startingOn: July/2/2024 assignedTo: pfuentes dependingOn: {} requiring: 9*hour.
+	
+	project := Project named: 'Boring Project' with: {task1. task2. task3. task4 }.
+	dates := project worksheetFor: pfuentes.
+	
+	self assert: (dates at: July/1/2024)	 equals: 2.
+	self assert: (dates at: July/2/2024)	 equals: 3.
+
+	
+
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 18:57:52'!
+test19ProjectCanComputeFullCostWhenItHasOneTask
+	|project pfuentes task1 cost |
+	
+	pfuentes := self pfuentes.
+	
+	task1 := ConcreteTask named: 'task1' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	
+	project := Project named: 'Boring Project' with: {task1}.
+	cost := project cost.
+	
+	self assert: cost equals: 6000 * peso.
+	
+
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 19:15:51'!
+test20ProjectCanComputeFullCostWhenItHasMoreThanOneTask
+	|project pfuentes task1 cost task2 task3 task4 |
+	
+	pfuentes := self pfuentes.
+	
+	task1 := ConcreteTask named: 'task1' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task2 := ConcreteTask named: 'task2' startingOn: July/2/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task3 := ConcreteTask named: 'task3' startingOn: July/3/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task4 := ConcreteTask named: 'task4' startingOn: July/4/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	
+	project := Project named: 'Boring Project' with: {task1. task2. task3. task4 }.
+	cost := project cost.
+	
+	self assert: cost equals: 4 * 6000 * peso.
+	
+
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 19:21:00'!
+test21ProjectCanComputeFullCostWhenItHasOverwork
+	|project pfuentes task1 cost task2 task3 task4 |
+	
+	pfuentes := self pfuentes.
+	
+	task1 := ConcreteTask named: 'task1' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task2 := ConcreteTask named: 'task2' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task3 := ConcreteTask named: 'task3' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task4 := ConcreteTask named: 'task4' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	
+	project := Project named: 'Boring Project' with: {task1. task2. task3. task4 }.
+	cost := project cost.
+	
+	self assert: project hasOverwork.
+	self assert: cost equals: 4 * 6000 * peso.
+	
+
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 19:27:42'!
+test22ProjectKnowsAmountOfTasksPerDayWithNestedProjects
+	|project pfuentes task1 task2 task3 task4 subproject worksheet |
+	
+	pfuentes := self pfuentes.
+	
+	task1 := ConcreteTask named: 'task1' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task2 := ConcreteTask named: 'task2' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task3 := ConcreteTask named: 'task3' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task4 := ConcreteTask named: 'task4' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	
+	subproject := Project named: 'Boring Subproject' with: {task1. task2. task3}.
+	project := Project named: 'Boring Project' with: {subproject. task4 }.
+	
+	worksheet := project worksheetFor: pfuentes.
+	
+	self assert: (worksheet at: July/1/2024)	 equals: 4.
+
+	
+
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 19:28:18'!
+test23ProjectKnowsOverworkWhenItHasNestedSubprojects
+	|project pfuentes task1 task2 task3 task4 subproject |
+	
+	pfuentes := self pfuentes.
+	
+	task1 := ConcreteTask named: 'task1' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task2 := ConcreteTask named: 'task2' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task3 := ConcreteTask named: 'task3' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task4 := ConcreteTask named: 'task4' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	
+	subproject := Project named: 'Boring Subproject' with: {task1. task2. task3}.
+	project := Project named: 'Boring Project' with: {subproject. task4 }.
+	
+	
+	self assert: project hasOverwork
+
+	
+
+	
+	! !
+
+!TaskTest methodsFor: 'tests' stamp: 'PFU 11/14/2024 19:29:15'!
+test24ProjectCanComputeFullCostWhenNestedProjects
+	|project pfuentes task1 task2 task3 task4 subproject |
+	
+	pfuentes := self pfuentes.
+	
+	task1 := ConcreteTask named: 'task1' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task2 := ConcreteTask named: 'task2' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task3 := ConcreteTask named: 'task3' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	task4 := ConcreteTask named: 'task4' startingOn: July/1/2024 assignedTo: pfuentes dependingOn: {} requiring: 1*hour.
+	
+	subproject := Project named: 'Boring Subproject' with: {task1. task2. task3}.
+	project := Project named: 'Boring Project' with: {subproject. task4 }.
+	
+	
+	self assert: project cost equals: 4 * 6000 * peso.
+
+	
+
+	
+	! !
+
 
 !TaskTest methodsFor: 'support' stamp: 'PFU 11/11/2024 19:24:17'!
 ds
@@ -175,6 +403,11 @@ timeToComplete: aTaskTime
 
 	self subclassResponsibility! !
 
+
+!Responsible methodsFor: 'getter' stamp: 'PFU 11/14/2024 18:47:39'!
+name
+	^ name! !
+
 
 !classDefinition: #Developer category: #'20241C'!
 Responsible subclass: #Developer
@@ -186,6 +419,17 @@ Responsible subclass: #Developer
 !Developer methodsFor: 'effort' stamp: 'PFU 11/11/2024 19:26:05'!
 timeToComplete: aTaskTime
 	^ (aTaskTime / dedication) ceiling! !
+
+
+!Developer methodsFor: 'cost' stamp: 'PFU 11/14/2024 19:13:33'!
+costToComplete: aTaskTime
+	| costPerDay taskTimeInDays |
+	costPerDay := dedication * cost.
+	taskTimeInDays := self timeToComplete: aTaskTime.
+	
+	^ costPerDay * taskTimeInDays
+	
+	! !
 
 
 !Developer methodsFor: 'initialization' stamp: 'PFU 11/11/2024 19:11:32'!
@@ -309,6 +553,27 @@ timeToComplete
 	^ (responsible timeToComplete: effort) - (1 * day)! !
 
 
+!ConcreteTask methodsFor: 'overwork' stamp: 'PFU 11/14/2024 18:48:39'!
+addWorkingDaysOf: aResponsible to: aWorksheet
+	(aResponsible name = responsible name) ifFalse: [^aWorksheet].
+		
+	self workingDays do: [:aWorkingDay | 
+			| tasksInDay | 
+			tasksInDay := aWorksheet at: aWorkingDay ifAbsent:[0].
+			aWorksheet at: aWorkingDay put: tasksInDay + 1.
+		].
+	
+	^aWorksheet 
+	
+	
+	! !
+
+!ConcreteTask methodsFor: 'overwork' stamp: 'PFU 11/14/2024 18:48:27'!
+workingDays
+
+	^ self startDate to: self endDate by: 1* day! !
+
+
 !ConcreteTask methodsFor: 'start' stamp: 'PFU 11/11/2024 20:33:04'!
 maxDependenciesEndDate
 	"will break if dependencies is empty"
@@ -319,6 +584,11 @@ startDate
 
 	^ dependencies ifEmpty:[desiredStartDate ]
 					ifNotEmpty: [self maxDependenciesEndDate next max: desiredStartDate ]! !
+
+
+!ConcreteTask methodsFor: 'cost' stamp: 'PFU 11/14/2024 19:00:54'!
+cost
+	^ responsible costToComplete: effort! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
@@ -355,6 +625,22 @@ startDate
 	^ tasks min: [:aTask | aTask startDate].! !
 
 
+!Project methodsFor: 'cost' stamp: 'PFU 11/14/2024 19:13:00'!
+cost
+	|cost|
+	cost := 0.
+	
+	tasks do: [:aTask | cost := cost + aTask cost.].
+	
+	^ cost! !
+
+
+!Project methodsFor: 'overwork' stamp: 'PFU 11/14/2024 18:49:45'!
+addWorkingDaysOf: aResponsible to: aWorksheet
+
+	tasks do: [:aTask | aTask addWorkingDaysOf: aResponsible to: aWorksheet].
+	! !
+
 !Project methodsFor: 'overwork' stamp: 'PFU 11/11/2024 21:48:44'!
 hasOverlap: aTask with: anotherTask
 	"aTask pertenece a anotherTask"
@@ -370,6 +656,28 @@ hasOverwork
 					aTask ~= anotherTask and:[self hasOverlap: aTask with: anotherTask			]
 		]
 	]! !
+
+!Project methodsFor: 'overwork' stamp: 'PFU 11/14/2024 18:46:09'!
+overworkingDatesOf: aResponsible
+	|overworkingDates worksheet|
+	
+	worksheet := self worksheetFor: aResponsible.
+	
+	overworkingDates := Set new.
+	worksheet keysAndValuesDo: [:aWorkingDay :aNumberOfTasks | aNumberOfTasks > 1 ifTrue: [overworkingDates add: aWorkingDay ]].
+	
+	^ overworkingDates 
+	
+	! !
+
+!Project methodsFor: 'overwork' stamp: 'PFU 11/14/2024 18:46:16'!
+worksheetFor: aResponsible
+	| worksheet |
+	worksheet := Dictionary new.
+
+	tasks do: [:aTask | aTask addWorkingDaysOf: aResponsible to: worksheet].
+	
+	^ worksheet.! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
