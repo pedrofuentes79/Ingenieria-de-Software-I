@@ -337,6 +337,19 @@ test03AddingToCart
 	
 	self assert: (rest listCart: cartId) equals: '|',book1,'|3|',book2, '|3'.! !
 
+!RESTAdapterTest methodsFor: 'tests' stamp: 'pfu 11/8/2024 20:58:24'!
+test04AddingInvalidAmountToCart
+	|rest  cartId book1 | 
+	rest := RESTAdapter validatingWith: factory credentialValidator priceList: factory priceList.
+	cartId := rest createCartForUser: 'pedro' withPassword: '123'.
+	book1 := factory book1.
+	
+	self should: [rest addToCart: cartId amount:(-1) of: book1]
+	raise: Error - MessageNotUnderstood 
+	withExceptionDo: [:error | 
+		self assertRest: rest emptyCart: cartId.
+		]! !
+
 !RESTAdapterTest methodsFor: 'tests' stamp: 'PFU 11/9/2024 09:42:31'!
 test04InvalidAddToCart
 	|rest  cartId book1 | 
@@ -427,6 +440,10 @@ amountOfItems
 isEmpty
 	^books size = 0.! !
 
+!Cart methodsFor: 'testing' stamp: 'pfu 11/5/2024 20:27:12'!
+purchaseListSize
+	^books size! !
+
 
 !Cart methodsFor: 'books' stamp: 'PFU 11/9/2024 20:18:19'!
 addBook: anISBN amount: anAmount 
@@ -434,6 +451,10 @@ addBook: anISBN amount: anAmount
 	self assertValidISBN: anISBN.
 	
 	books add: anISBN withOccurrences: anAmount.! !
+
+!Cart methodsFor: 'books' stamp: 'pfu 11/5/2024 20:32:07'!
+getAmountOf: aBook
+	^books occurrencesOf: aBook! !
 
 !Cart methodsFor: 'books' stamp: 'pfu 11/8/2024 20:43:10'!
 listYourself
@@ -474,6 +495,7 @@ purchaseList
 Cart class
 	instanceVariableNames: ''!
 
+
 !Cart class methodsFor: 'errors' stamp: 'pfu 11/2/2024 09:15:24'!
 invalidAmountOfBooksError
 	^ 'Amount of books should be an integer greater or equal to 1'! !
@@ -509,6 +531,19 @@ assertValidExpirationDate: aCreditCard withCurrent: aCurrentDate
 ! !
 
 
+!Cashier methodsFor: 'checkout' stamp: 'pfu 11/8/2024 17:37:12'!
+checkout: aCart
+	| total |
+	self assertCartNotEmpty: aCart.
+	
+	"ex implementacion.."
+	"priceList keysAndValuesDo: [:book :price | total := total + (price * (aCart getAmountOf: book))]."
+	total := aCart total.
+	
+	^total
+	
+	! !
+
 !Cashier methodsFor: 'checkout' stamp: 'PFU 11/9/2024 19:01:09'!
 checkout: aCart with: aCreditCard onDate: currentDate
 	| total |
@@ -537,10 +572,10 @@ checkoutWith: aCreditCard onDate: currentDate
 	! !
 
 
-!Cashier methodsFor: 'errors' stamp: 'PFU 11/9/2024 09:59:45'!
-emptyCartError
-	^'Cannot checkout empty cart'! !
 
+!Cashier methodsFor: 'initialize' stamp: 'pfu 11/8/2024 17:38:00'!
+initializeWith: aMerchant 
+	merchant := aMerchant! !
 
 !Cashier methodsFor: 'initialize' stamp: 'PFU 11/9/2024 21:55:38'!
 initializeWith: aMerchant savingOn: aSalesBook for: aCart   
@@ -548,11 +583,20 @@ initializeWith: aMerchant savingOn: aSalesBook for: aCart
 	salesBook := aSalesBook.
 	cart := aCart.! !
 
+
+!Cashier methodsFor: 'errors' stamp: 'PFU 11/9/2024 09:59:45'!
+emptyCartError
+	^'Cannot checkout empty cart'! !
+
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
 !classDefinition: 'Cashier class' category: #TusLibros!
 Cashier class
 	instanceVariableNames: ''!
+
+!Cashier class methodsFor: 'instance creation' stamp: 'pfu 11/8/2024 17:38:16'!
+with: aMerchant
+	^self new initializeWith: aMerchant! !
 
 !Cashier class methodsFor: 'instance creation' stamp: 'PFU 11/9/2024 22:02:02'!
 with: aMerchant savingOn: aSalesBook for: aCart  
@@ -619,6 +663,11 @@ Object subclass: #RESTAdapter
 	poolDictionaries: ''
 	category: 'TusLibros'!
 
+!RESTAdapter methodsFor: 'ids' stamp: 'pfu 11/8/2024 20:26:39'!
+createNewId
+	currentId := currentId + 1.
+	^currentId! !
+
 !RESTAdapter methodsFor: 'ids' stamp: 'PFU 11/9/2024 09:46:11'!
 getCartWithId: aCartId
 	^ idToCart at: aCartId ifAbsent: [self error: self invalidCartIdError].! !
@@ -651,6 +700,13 @@ newTransactionIdFor: aSale
 totalFromTransaction: transactionId 
 	^((transactionIdToSale at: transactionId) total)! !
 
+
+!RESTAdapter methodsFor: 'initialization' stamp: 'pfu 11/8/2024 20:28:38'!
+validatingWith: aCredentialValidator priceList: aPriceList 
+	validator := aCredentialValidator.
+	priceList := aPriceList.
+	currentId := 0.
+	idToCart  := Dictionary new.! !
 
 !RESTAdapter methodsFor: 'initialization' stamp: 'PFU 11/9/2024 19:32:17'!
 validatingWith: aCredentialValidator priceList: aPriceList merchant: aMerchantProcessor onDate: currentDate salesBook: aSalesBook
@@ -751,6 +807,10 @@ noCartsForUserError
 RESTAdapter class
 	instanceVariableNames: ''!
 
+!RESTAdapter class methodsFor: 'instance creation' stamp: 'pfu 11/8/2024 20:23:03'!
+validatingWith: credentialValidator priceList: priceList 
+	^self new validatingWith: credentialValidator priceList: priceList.! !
+
 !RESTAdapter class methodsFor: 'instance creation' stamp: 'PFU 11/9/2024 18:13:10'!
 validatingWith: credentialValidator priceList: priceList merchant: merchant onDate: onDate salesBook: salesBook    
 	^self new validatingWith: credentialValidator priceList: priceList merchant: merchant onDate: onDate salesBook: salesBook.! !
@@ -791,7 +851,6 @@ Object subclass: #SalesBook
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'TusLibros'!
-
 
 !SalesBook methodsFor: 'initialization' stamp: 'PFU 11/9/2024 20:38:51'!
 initialize

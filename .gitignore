@@ -1,1 +1,5 @@
+
 linux64/
+._linux64
+*.pdf
+linux64-UserFiles/
